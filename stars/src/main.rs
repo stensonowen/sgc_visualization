@@ -1,5 +1,6 @@
-extern crate piston_window;
+#[macro_use] 
 extern crate clap;
+extern crate piston_window;
 
 use piston_window::*;
 use std::cmp;
@@ -9,29 +10,28 @@ mod convert_colors;
 use convert_colors::wavelength_to_rgb;
 
 const C: f64 = 299_792_458.;
-const SPEED_FACTOR: f64 = 10.;  // slightly adjust things to make the effect more obvious
+const DEF_SPEED_FACTOR: f64 = 10.;  // slightly adjust things to make the effect more obvious
 
 // the Sun is 10**20 meters from Sagittarius A*
-const ORBIT_RADIUS: f64 = 2.6 * 100_000_000_000_000_000_000.; // meters
-
+const DEF_ORBIT_RADIUS: f64 = 2.6 * 100_000_000_000_000_000_000.; // meters
 // 1 galactic year: 225 million terrestrial years (measured here in seconds)
-const ORBIT_DURATION: f64 = 225. * 1000000. * 365.25 * 24. * 3600. / SPEED_FACTOR;
+const DEF_ORBIT_DURATION: f64 = 225. * 1000000. * 365.25 * 24. * 3600.; 
 
-const ORBIT_SPEED: f64 = PI * 2.0 * ORBIT_RADIUS / ORBIT_DURATION;  // m/s
+const DEF_INCREMENT: f64 = 0.01;    // how much each frame changes theta
+const DEF_TRUE_COLOR: f64 = 590.;   // nanometers
 
-const INCREMENT: f64 = 0.01;    // how much each frame changes theta
-
-const TRUE_COLOR: f64 = 590.;   // nanometers
-
+const DEF_WIDTH: u32 = 640;
+const DEF_HEIGHT: u32 = 480;
 const LEGEND_X: f64 = 75.0;
 const LEGEND_Y: f64 = 75.0;
 
-fn doppler(v: f64) -> f64 {
+fn doppler(v: f64, true_col: f64) -> f64 {
     // assume observer immobile w.r.t. medium
     // positive `v` means object is moving toward observer
     // velocity (input) measured in m/s
     // frequency (output) measured in Hz
-    C * TRUE_COLOR / (C + v)
+    // original frequency can be measured in nm (conversion cancels)
+    (C * (true_col) / (C + v))
 }
 
 fn get_dimensions(s: Size) -> [f64; 4] {
@@ -40,6 +40,12 @@ fn get_dimensions(s: Size) -> [f64; 4] {
     let x = w as f64 / 2.0;
     let y = h as f64 / 2.0;
     [x - radius/2.0, y - radius/2.0, radius, radius]
+}
+
+fn sci_not(x: f64) -> (u8, u8) {
+    let exponent = x.log10().trunc() as u8;
+    let mantissa = x / 10f64.powi(exponent as i32);
+    (mantissa as u8, exponent)
 }
 
 fn draw_legend<G: Graphics>(x: f64, y: f64, theta: f64, t: [[f64;3];2], g: &mut G) {
@@ -73,21 +79,58 @@ fn main() {
              .long("speedup-factor")
              .takes_value(true)
              .help("Speed up the star's speed by a constant to make the effect more visible"))
+        .arg(clap::Arg::with_name("orbit_velocity")
+             .long("orbit-velocity")
+             .takes_value(true)
+             .conflicts_with("orbit-radius")
+             .conflicts_with("orbit-duration")
+             .help("Manually set the star's velocity (in meters per second)"))
         .arg(clap::Arg::with_name("increment")
              .long("theta-increment")
              .takes_value(true)
              .help("Change the granularity at which the visualization (not the star) moves"))
+        .arg(clap::Arg::with_name("width")
+             .short("x")
+             .takes_value(true)
+             .help("Set the window width"))
+        .arg(clap::Arg::with_name("height")
+             .short("y")
+             .takes_value(true)
+             .help("Set the window height"))
+        .arg(clap::Arg::with_name("true_color")
+             .long("color")
+             .takes_value(true)
+             .help("Set the true wavelength of the star (in nanometers)"))
         .get_matches();
 
+    println!("Starting visualization...");
+    // speed object is moving (meters per second)
+    let velocity = value_t!(args, "orbit_velocity", f64).unwrap_or_else(|_| {
+        let r = value_t!(args, "orbit_radius", f64).unwrap_or(DEF_ORBIT_RADIUS);
+        let t = value_t!(args, "orbit_duration", f64).unwrap_or(DEF_ORBIT_DURATION);
+        let s = value_t!(args, "speedup", f64).unwrap_or(DEF_SPEED_FACTOR);
+        let (r0,r1) = sci_not(r);
+        let (t0,t1) = sci_not(t);
+        println!("The star's orbital radius is approximately {}*10^{} m", r0, r1);
+        println!("The star's orbit has a duration of approximately {}*10^{} s", t0, t1);
+        println!("NOTE: The star's velocity is multiplied by {} to magnify the effect", s);
+        2.0 * PI * r / t * s
+    });
+    let increment = value_t!(args, "increment", f64).unwrap_or(DEF_INCREMENT);
+    let width = value_t!(args, "width", u32).unwrap_or(DEF_WIDTH);
+    let height = value_t!(args, "height", u32).unwrap_or(DEF_HEIGHT);
+    let orig_wl = value_t!(args, "true_wavelength", f64).unwrap_or(DEF_TRUE_COLOR);
+
     let mut window: PistonWindow =
-        WindowSettings::new("Doppler Effect of the Sun", [640, 480])
+        WindowSettings::new("Doppler Effect of the Sun", [width, height])
         .exit_on_esc(true).build().unwrap();
 
     let size = get_dimensions(window.size());
 
-    // TODO: Clap args to customize parameters
-    // TODO: print statements indicating max change, speed, etc.
-    // TODO: writeup, how to read, what it is, etc.
+    let v = sci_not(velocity);
+    println!("The star is moving at approximately {}*10^{} m/s", v.0, v.1);
+    println!("The star's true wavelength is {} nm", orig_wl);
+    println!("Animating at {:2.2} frames per orbit revolution", 2.0 * PI / increment);
 
     // azimuthal angle
     // 0 is closest to camera, increases clockwise from x to y axis
@@ -101,10 +144,10 @@ fn main() {
     let mut color;
 
     while let Some(e) = window.next() {
-        theta = (theta + INCREMENT) % (2.0 * PI);
+        theta = (theta + increment) % (2.0 * PI);
 
-        x_vel = - ORBIT_SPEED * theta.sin();
-        lambda = doppler(x_vel);
+        x_vel = - velocity * theta.sin();
+        lambda = doppler(x_vel, orig_wl);
         color = wavelength_to_rgb(lambda);
 
         window.draw_2d(&e, |c, g| {
