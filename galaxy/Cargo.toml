@@ -7,4 +7,6 @@ authors = ["owen <owen@oms.sh>"]
 piston = "0.31.4"
 piston_window = "0.64.0"
 clap = "2.23.1"
+rand = "*"
+
 
