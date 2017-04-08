@@ -16,8 +16,24 @@ The effect for this example is a bit hard to notice, but it can be magnified wit
 
 Due to the Doppler Effect, when the star is moving toward the camera its wavelength is compressed and it is blueshifted; this happens when the dial is between 12 o'clock and 6 o'clock (and peaks at 3 o'clock). Then, from 6 o'clock to 12 o'clock, the star moves away from the camera, to the other end of its orbit, and appears redshifted because its wavelength is rarefied.
 
+The legend in the upper left indicates where the star is in its orbit; the line shows where the star is from the point of view "above" the orbit (orthogonal to its motion). 6 o'clock is closest to the camera, 12 o'clock is farthest. 
+
 ## Color Adjustment
 One challenge I did not anticipate was color representation: to compute the doppler shift its wavelength must be known, but to print it to the screen its red/green/blue/alpha values must be known. RGB are not realy related to the light's wavelength, and cannot really represent constructive interference properly, so it is non-trivial to convert between them. I implemented the pseudocode [here](http://www.efg2.com/Lab/ScienceAndEngineering/Spectra.htm) to add this functionality.
 
+## Demo
+
+![Default command lines](/stars/default.gif)
+
+Run with default command line args. Terminal output:
+```
+Starting visualization...
+The star's orbital radius is approximately 2*10^20 m
+The star's orbit has a duration of approximately 7*10^15 s
+NOTE: The star's velocity is multiplied by 10 to magnify the effect
+The star is moving at approximately 2*10^6 m/s
+The star's true wavelength is 590 nm
+Animating at 628.32 frames per orbit revolution
+```
 
 
