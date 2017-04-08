@@ -7,7 +7,42 @@
 
 The cosmos provide an interesting candidate for visualization. It encompasses a wide variety of the phenomena, many of which involve spectacular color or immense scales. Animation is also an interesting opportunity to simulate interaction between objects (gravitational attraction, collision, EM interference, chemical/nuclear reactions, etc.). I've been interested in exploring both visualization and simulation in the Rust programming language, for which this project is a good opportunity.
 
+## Usage
+
+```
+./doppler -h
+
+The Doppler Effect of our Sun 
+Owen Stenson
+Visualize the changing wavelength of the Sun as it orbits
+
+USAGE:
+    doppler [OPTIONS]
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+    -x <width>                               Set the window width
+    -y <height>                              Set the window height
+        --theta-increment <increment>        Change the granularity at which the visualization (not the star) moves
+        --orbit-duration <orbit_duration>    Set a custom orbit duration (in seconds)
+        --orbit-radius <orbit_radius>        Set a custom orbit radius (in meters)
+        --orbit-velocity <orbit_velocity>    Manually set the star's velocity (in meters per second)
+        --speedup-factor <speedup>           Speed up the star's speed by a constant to make the effect more visible
+        --color <true_color>                 Set the true wavelength of the star (in nanometers)
+```
+
+## Building
+
+Rust is required to build this project from source; it can be acquired [here](https://rustup.rs).
+
+From there you can build with `cargo run --release`
+
+
 ## Why Rust
+
 Rust is not commonly used for data crunching or game development, but in the future it might be. Rust makes it easy to cleanly interface with external libraries, build for different architectures, and write high level code that is still very fast. It also provides strong safety guarantees, which help to verify data integrity and security.
 
 # Doppler Effect Visualizer
