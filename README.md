@@ -58,7 +58,7 @@ One challenge I did not anticipate was color representation: to compute the dopp
 
 ## Demo
 
-![Default command lines](/stars/default.gif)
+![Default command lines](/doppler/default.gif)
 
 Run with default command line args. Terminal output:
 ```
